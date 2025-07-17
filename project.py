@@ -10,16 +10,20 @@ from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.prompts import PromptTemplate
 
-# Load Groq-hosted LLaMA 3 model
+
 llm = ChatGroq(
-    api_key="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",
+    api_key = os.getenv("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"),
+    
     model_name="llama3-8b-8192"
 )
 
-# Use HuggingFace for embeddings
+
+
+api_key = os.getenv("GROQ_API_KEY")
+
+
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-# Streamlit UI
 st.title("📰 Research Tool with LLaMA3")
 st.sidebar.title("Enter up to 3 News Article URLs")
 

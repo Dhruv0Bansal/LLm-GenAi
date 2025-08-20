@@ -32,7 +32,7 @@ for i in range(3):
     url = st.sidebar.text_input(f"URL {i+1}")
     urls.append(url)
 
-urls = [u for u in urls if u]  # Remove blanks
+urls = [u for u in urls if u]  
 process_url_click = st.sidebar.button("🔍 Analyze URLs")
 reset = st.sidebar.button("🔁 Reset Session")
 if reset:
@@ -50,6 +50,7 @@ if process_url_click:
         chain = RetrievalQAWithSourcesChain.from_chain_type(llm, retriever=retriever)
 
         response = chain({"question": "What is the main idea of the article?"})
+#glitch handled
 
         st.subheader("🧠 Answer")
         st.write(response["answer"])

@@ -1,50 +1,50 @@
-# Memory Fragmentation
+# LLM-Based Article Analyzer with Semantic Search
 
-In Operating Systems, **fragmentation** refers to the inefficient use of memory that reduces system performance.  
-It is mainly categorized into **Internal Fragmentation** and **External Fragmentation**.
+A single-file RAG (Retrieval-Augmented Generation) backend pipeline for
+semantic search and automated insight extraction over news articles.
 
----
+## How it works
 
-## 1. Internal Fragmentation
-- **Definition:** Wasted memory *inside* an allocated block because the process does not use the entire block.
-- **Cause:** Fixed-size memory allocation (e.g., if block = 4 KB but process only needs 3.2 KB → 0.8 KB wasted).
-- **Key Point:** Happens *within* partitions.
+1. **Ingestion** — loads `.txt` articles from `./articles`
+2. **Chunking** — splits articles into overlapping 500-character chunks
+   (`RecursiveCharacterTextSplitter`) so embeddings stay precise and fit
+   within the LLM's context window
+3. **Embedding** — each chunk is converted into a vector using a
+   HuggingFace sentence-transformer model (`all-MiniLM-L6-v2`)
+4. **Indexing** — all chunk embeddings are stored in a FAISS index for
+   fast similarity search
+5. **Retrieval** — a user's query is embedded the same way, and FAISS
+   returns the top-k most semantically similar chunks
+6. **Generation (RAG)** — the retrieved chunks + the query are passed to
+   LLaMA3, served via Groq's low-latency inference API, to generate a
+   grounded answer
+7. **UI** — a Streamlit app exposes a search box and shows both the
+   retrieved chunks and the generated insight
 
-### Example:
-- Memory block allocated: **100 KB**
-- Process size: **92 KB**
-- **8 KB wasted** inside the block (unused but reserved).
+## Setup
 
----
+```bash
+pip install -r requirements.txt
+cp .env.example .env
+```
 
-## 2. External Fragmentation
-- **Definition:** Wasted memory *outside* allocated blocks, i.e., free memory exists but is scattered in small chunks.
-- **Cause:** Variable-sized memory allocation where processes finish and leave holes.
-- **Key Point:** Free memory exists but not in one contiguous block.
+Drop your own `.txt` news articles into the `articles/` folder (a couple
+of samples are included so it runs out of the box).
 
-### Example:
-- Free memory: 600 KB (100 KB + 200 KB + 300 KB scattered).
-- Process requests: **400 KB**.
-- Allocation fails (despite total free memory > 400 KB) because no single block is large enough.
+## Run
 
----
+```bash
+streamlit run app.py
+```
 
-## Differences
+## Notes on design choices
 
-| Aspect                  | Internal Fragmentation | External Fragmentation |
-|--------------------------|-------------------------|-------------------------|
-| Location of waste        | Inside allocated block | Between allocated blocks |
-| Cause                    | Fixed partition size   | Variable partitions      |
-| Wasted memory type       | Reserved but unused    | Free but unusable        |
-| Solution                 | Dynamic partitioning, paging | Compaction, paging, segmentation |
-
----
-
-## Solutions
-- **For Internal Fragmentation:**  
-  - Use **dynamic partitions** or **paging** to allocate exactly what is required.
-- **For External Fragmentation:**  
-  - Use **compaction** (rearrange memory to create contiguous space).  
-  - Use **paging or segmentation**.
-
----
+- **Chunk size (500 chars, 50 overlap):** small enough for accurate
+  embeddings, large enough to preserve context; overlap prevents losing
+  meaning at chunk boundaries.
+- **all-MiniLM-L6-v2:** lightweight (384-dim) embedding model — fast on
+  CPU, good enough accuracy for a project at this scale.
+- **FAISS (flat index):** in-process, no separate server needed; exact
+  similarity search is fine at this dataset size.
+- **Groq + LLaMA3:** open-source model, low-latency inference, no
+  per-token cost — good fit for a personal project.
